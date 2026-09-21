@@ -1,0 +1,15 @@
+substitutions:
+  hostname: "pir-house-test-beken" 
+  #password_ota: ""
+  #key_api: ""  
+  installation_area: "дом - "
+  wifi_ssid: !secret wifi_ssid_house_hall
+  wifi_password: !secret wifi_password_n
+  static_ip: 192.168.100.198
+  board: "board-tuya-cbu"
+  device_http: "pir"
+  publish_message: Заменить батарейки
+
+
+packages:  
+  - !include device/pir-water-leak-uart-tuya-mqtt/house-bathhouse.yaml
