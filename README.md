@@ -27,6 +27,6 @@ Once the device is assembled and running on battery power, it is impossible to f
 To bypass this and push updates wirelessly, use the **Physical Reset/Pairing Button**:
 
 1. **Trigger the Timeout Loop:** Press and hold the physical button inside the device until the status LEDs begin to blink rapidly. 
-2. **MCU Hold-On State:** The TuyaMCU detects this hardware override sequence and enters an autoconfiguration/pairing mode. Instead of shutting down after 4 seconds, the MCU will force-keep the Wi-Fi chip powered on for approximately **35 seconds**, waiting for a network handshake.
+2. **MCU Hold-On State:** The TuyaMCU detects this hardware override sequence and enters an autoconfiguration/pairing mode. Instead of shutting down after 4 seconds, the MCU will force-keep the Wi-Fi chip powered on for approximately **60-180 seconds**, waiting for a network handshake.
 3. **Executing OTA:** Within this 35-second window, your automation scripts must initiate the wireless ESPHome OTA update process. 
 4. **Automatic Reboot:** If the OTA fails or times out, the device will automatically reboot after ~35 seconds, cut the power rail, and return to its ultra-low-power event-driven sleep routine.
