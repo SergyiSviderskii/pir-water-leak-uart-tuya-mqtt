@@ -1,0 +1,28 @@
+substitutions:
+  broker: !secret mqtt_broker_ip
+  
+
+bk72xx:
+  board: cbu
+
+
+wifi:     
+  ssid: $wifi_ssid
+  password: $wifi_password
+  reboot_timeout: 0s
+  fast_connect: yes # Оставляем ускоренный коннект без сканирования!  
+  #use_address: 192.168.100.xx 
+  
+  
+uart:
+  tx_pin: TX1
+  rx_pin: RX1
+  baud_rate: 9600 
+  rx_buffer_size: 512 # Огромный буфер убережет байты UART, пока ESP ищет Wi-Fi   
+  
+
+# Виртуальная Батарея
+sensor:
+  - platform: template
+    id: battery_adc
+    update_interval: never

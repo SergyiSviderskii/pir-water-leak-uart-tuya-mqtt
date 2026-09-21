@@ -1,0 +1,342 @@
+# pir, water-leak (tywe3s, cbu)
+substitutions:
+  bssid_1: !secret wifi_bssid_house_hall
+  bssid_2: !secret wifi_bssid_house_bedroom_home
+  bssid_3: !secret wifi_bssid_house_bedroom_d
+  bssid_4: !secret wifi_bssid_house_bedroom
+  bssid_5: !secret wifi_bssid_house_living_room
+  bssid_6: !secret wifi_bssid_street_bath_right
+  bssid_7: !secret wifi_bssid_house_garret
+  bssid_8: !secret wifi_bssid_house_garage
+  bssid_9: !secret wifi_bssid_bath_garret
+  bssid_10: !secret wifi_bssid_street_bath_left
+  bssid_11: !secret wifi_bssid_plus 
+  wifi_bssid_1_: !secret wifi_bssid_1_ 
+  wifi_bssid_2_: !secret wifi_bssid_2_    
+  wifi_bssid_3_: !secret wifi_bssid_3_    
+  wifi_bssid_4_: !secret wifi_bssid_4_    
+  wifi_bssid_5_: !secret wifi_bssid_5_ 
+  wifi_bssid_6_: !secret wifi_bssid_6_ 
+  wifi_bssid_7_: !secret wifi_bssid_7_    
+  wifi_bssid_8_: !secret wifi_bssid_8_  
+  wifi_bssid_9_: !secret wifi_bssid_9_    
+  wifi_bssid_10_: !secret wifi_bssid_10_ 
+  wifi_bssid_11_: !secret wifi_bssid_11_ 
+  
+  # изменить или убрать пароль OTA
+  password_ota: ""
+  #on_boot_script: 'id(my_ota).set_auth_password("");' 
+  on_boot_script: ";"  
+ 
+ 
+esphome:
+  name: $hostname
+  friendly_name: $friendly_name
+  area: $installation_area 
+  on_boot:
+    priority: 600
+    then:
+    
+#      - lambda: 'id(my_ota).set_auth_password("");'   # изменить или убрать пароль OTA    
+    
+      - binary_sensor.template.publish:
+          id: get_swith_factory
+          state: OFF    
+      - binary_sensor.template.publish:
+          id: my_physical_pir_leak_sensor   
+          state: OFF
+      - sensor.template.publish:
+          id: battery_sm_pir_leak
+          state: "-0.0"  
+      - text_sensor.template.publish:
+          id: point_bssid
+          state: "Нет данных"   
+      - text_sensor.template.publish:
+          id: bssid_point
+          state: "Нет данных"   
+      - lambda: |-
+          #if defined(USE_BK72XX) || defined(LT_BK7231N)
+            // Если это БК7231, просто пишем в память 3.3В и забываем про него
+            id(battery_adc).publish_state(3.3f);
+          #endif          
+ 
+
+# Enable logging
+logger:
+  #level: NONE
+  level: ERROR
+  baud_rate: 0
+  
+  
+wifi:  
+  manual_ip:
+    static_ip: $static_ip        # Наш выбранный адрес вне зоны DHCP
+    gateway: 192.168.100.1       # Адрес самого роутера 
+    subnet: 255.255.255.0
+    dns1: 192.168.100.1           # Первым DNS пишем роутер
+    
+  on_connect: 
+    - then:
+    
+        - if:
+            condition: 
+              lambda: |-
+                return id(bssid_point).state != "" && id(bssid_point).state != "Нет данных"; 
+            then:
+              - text_sensor.template.publish:
+                  id: point_bssid
+                  state: !lambda |-
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_1}") == 0) return "${wifi_bssid_1_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_2}") == 0) return "${wifi_bssid_2_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_3}") == 0) return "${wifi_bssid_3_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_4}") == 0) return "${wifi_bssid_4_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_5}") == 0) return "${wifi_bssid_5_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_6}") == 0) return "${wifi_bssid_6_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_7}") == 0) return "${wifi_bssid_7_}";  
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_8}") == 0) return "${wifi_bssid_8_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_9}") == 0) return "${wifi_bssid_9_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_10}") == 0) return "${wifi_bssid_10_}";
+                    if (strcasecmp(id(bssid_point).state.c_str(), "${bssid_11}") == 0) return "${wifi_bssid_11_}";
+                  
+                    return "Неизвестная точка";   
+                    
+ 
+mqtt:
+  broker: $broker
+  username: !secret mqtt_username  
+  password: !secret mqtt_password
+  discovery_unique_id_generator: mac
+  id: mqtt_client
+  log_topic:
+    topic: $hostname/debug
+    qos: 0
+    retain: false 
+  birth_message:
+    topic: $hostname/status
+    payload: online 
+    qos: 0
+    retain: true  
+  will_message:
+    topic: $will_message_topic
+    payload: $will_message_payload  
+    qos: 0
+    retain: $will_message_retain  
+  shutdown_message:  
+  
+  # ГЛАВНЫЙ СЦЕНАРИЙ: Выполняется ровно ОДИН РАЗ в момент реального подключения к сети
+  on_connect: 
+    - then: 
+    
+        - delay: 500ms    
+
+        - lambda: 
+            id(uart_bus).last_off_time = millis();  
+            
+        # - component.update: battery_adc # 1. Делаем один чистый замер АЦП в стабильной сети
+        
+        # - delay: 20ms
+        
+        - lambda: |-
+            #ifdef USE_ESP8266
+              // Этот кусок скомпилируется ТОЛЬКО для ESP8266
+              id(battery_adc).update(); 
+              delay(20); 
+            #endif
+            
+            #ifdef USE_BK72XX
+              // Для БК7231 этот блок останется абсолютно пустым!
+              // Компилятор просто пропустит этот шаг, не теряя ни миллисекунды.
+            #endif
+        
+        
+        # Выполняем математику пересчета батарейки один раз прямо здесь
+        - lambda: |-
+            if (id(uart_bus).get_battery_pir_leak.has_value()) {  
+              uint8_t bat_val = id(uart_bus).get_battery_pir_leak.value();
+              float adc_val = id(battery_adc).state;
+
+              // Если виртуальный сенсор на БК еще не успел инициализироваться и выдать свои 3.3В:
+              if (isnan(adc_val)) {
+                adc_val = 3.3f; // Принудительно подставляем ваши 3.3 Вольта
+              }
+              
+              if (bat_val == 0) { 
+                if (adc_val > 1.5f) {
+                  if (adc_val <= 3.2f) { 
+                    id(battery_sm_pir_leak).publish_state(0); 
+                  } else { 
+                    id(battery_sm_pir_leak).publish_state(25); 
+                  } 
+                }    
+              }      
+              if (bat_val == 1) {
+                id(battery_sm_pir_leak).publish_state(50);
+              }
+              if (bat_val == 2) {
+                if (adc_val < 1.5f) {
+                  id(battery_sm_pir_leak).publish_state((int)(100 - ((1.0f - adc_val) / 0.205f * 100)));                 
+                } else {  
+                  id(battery_sm_pir_leak).publish_state(100);                
+                }
+              } 
+              if (bat_val == 3) {
+                id(battery_sm_pir_leak).publish_state(id(uart_bus).get_battery_pir_leak_scale);
+              }              
+              id(uart_bus).get_battery_pir_leak.reset(); // Сбрасываем флаг в C++
+            }                                
+    
+        - if:
+            condition:
+              lambda: |-
+                return id(uart_bus).is_diagnostics_enabled; // Проверяем, нужны ли логи вообще
+            then: 
+              - lambda: |-
+                  ESP_LOGE("main", "===============================");
+                  ESP_LOGE("main", "=== ХРОНОЛОГИЯ ОБМЕНА С MCU === %u", millis());
+      
+                  const auto &vector_ref = id(uart_bus).get_diagnostic_vector();
+      
+                  if (!vector_ref.empty()) {
+                    size_t total = vector_ref.size();
+                    
+                    for (size_t i = 0; i < total; ++i) {
+                      const auto &frame = vector_ref.at(i);
+      
+                      // ИСПРАВЛЕНО: Собираем HEX-строку вручную, гарантируя вывод байт
+                      std::string hex_str = "";
+                      char buf[4];
+                      for (uint8_t byte : frame.g_delay) {
+                        sprintf(buf, "%02X ", byte);
+                        hex_str += buf;
+                      }
+      
+                      std::string arrow = (frame.g_inout == "Sending") ? "----->" : "<-----";
+              
+                      ESP_LOGE("main", "  [%s] %s [%s] Время: %u мс", 
+                              frame.g_inout.c_str(),
+                              arrow.c_str(),
+                              hex_str.c_str(), 
+                              frame.g_time);                    
+                    }
+                    
+                    // 2. Освобождаем память ESP перед отключением питания
+                    id(uart_bus).clear_diagnostic_vector();
+                    ESP_LOGE("main", "=== Приватный буфер успешно очищен ===");
+      
+                  } else {
+                    ESP_LOGE("main", "Буфер обмена пуст.");
+                  }
+                
+                  ESP_LOGE("main", "===============================");
+   
+    
+ota:
+  - platform: esphome
+    password: "$password_ota"
+    
+    
+external_components:
+  - source:
+      type: local
+      path: components/my_components/tuya
+    refresh: 1d
+    components: all 
+    
+    
+pir_water_leak_uart_tuya_component: 
+  id: uart_bus
+  # Передаем указатель на датчик протечки в C++ код через исправленный Python-скрипт
+  pir_leak_sensor: my_physical_pir_leak_sensor  
+ 
+    
+switch:
+  - platform: factory_reset
+    id: restart_swith_factory 
+
+
+binary_sensor:
+  - platform: template
+    name: "${device_name}"
+    device_class: "${device}"
+    # id: sensor_m_pir_leak
+    id: my_physical_pir_leak_sensor  
+    retain: true    
+    
+  # 3. Датчик сброса к заводским настройкам
+  - platform: template
+    id: get_swith_factory  
+    lambda: |-
+      if (id(uart_bus).get_restart_swith_factory) {
+        return true;
+      } else {
+        return {};
+      } 
+    on_press:
+      then:
+        - switch.turn_on: restart_swith_factory      
+  
+  
+sensor:
+  - platform: template
+    name: "Battery" 
+    id: battery_sm_pir_leak
+    device_class: battery   
+    state_class: measurement
+    unit_of_measurement: "%"
+    retain: true 
+    update_interval: never # Обновляется строго по команде из wifi.on_connect
+    on_value:
+      then:
+        # Проверяем реальную просадку батареи (исключаем ложный 0 при старте)
+        - if:  
+            condition:
+              - lambda: |-  
+                  return (x > -0.0 && (x <= 3.0 || x == 0.0)); // Сработает, если реальный заряд упал ниже 3%                
+            then: 
+              - mqtt.publish_json:
+                  topic: /power/supply
+                  payload: |-
+                    root["message"] = "$publish_message";
+                    root["title"] = "$publish_title";           
+        
+        - if:  
+            condition:
+              lambda: |- 
+                return id(battery_adc).state < 1.5 && id(battery_adc).state > 0.5;
+            then:    
+              - text_sensor.template.publish:
+                  id: template_text
+                  state: "Дата проверки батареи"  
+ 
+    
+text_sensor:
+  - platform: template
+    name: "check battery"
+    id: template_text
+    icon: mdi:battery-alert-variant-outline
+    retain: false
+    internal: $internal
+    update_interval: never   
+    
+  - platform: template 
+    name: "Access point"  
+    id: point_bssid
+    icon: mdi:router-wireless
+    update_interval: never
+    retain: true    
+
+  - platform: version
+    name: "ESPHome Version" 
+    retain: true     
+
+  - platform: wifi_info
+    mac_address:
+      name: "Mac Wifi"  
+    ip_address:
+      icon: mdi:ip  
+      name: "IP"      
+    bssid:
+      id: bssid_point 
+
+ 
+      
