@@ -416,7 +416,7 @@ static const int MAX_RETRIES = 5;
                   if (datapoint.id == 1) {
                     bool is_active = (datapoint.value_enum == 0x01 || datapoint.value_enum == 0x02); 
                     if (this->pir_leak_sensor_ptr_ != nullptr) 
-                      this->pir_leak_sensor_ptr_->publish_state(is_active);          
+                      this->pir_leak_sensor_ptr_->publish_state(!is_active);          
                   }
                   if (datapoint.id == 3) {
                     get_battery_pir_leak = datapoint.value_enum;  
