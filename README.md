@@ -52,8 +52,8 @@ All versions below have been **personally tested** with this component:
 
 | ESPHome Version | Status | Notes |
 |---|---|---|
-|  2026.5.3 | ✅ Works | Stable |
-| 2026.6.0 — 2026.7.4 | ✅ **Recommended** | Best stability |
+| 2026.5.3 - 2026.6.x| ✅ Works | Stable |
+| 2026.7.4 | ✅ **Recommended** | Best stability |
 | 2026.8.x | ✅ Stable | No issues observed |
 | 2026.9.0+ | ❌ Breaks code | Do not use |
 
