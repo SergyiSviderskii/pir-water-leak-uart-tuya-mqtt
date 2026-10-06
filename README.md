@@ -44,21 +44,6 @@ Fixes Beken bootloader serial noise and grouped frame buffer truncation — two 
 
 > **Note:** Any TuyaMCU v0 battery device using the `55 AA` frame protocol over UART at 9600 baud should be compatible. Untested devices may require minor DP-ID adjustments in the configuration.
 
----
-
-## 📟 ESPHome Version Compatibility
-
-All versions below have been **personally tested** with this component:
-
-| ESPHome Version | Status | Notes |
-|---|---|---|
-| 2026.5.3 - 2026.6.x| ✅ Works | Stable |
-| 2026.7.4 | ✅ **Recommended** | Best stability |
-| 2026.8.x | ✅ Stable | No issues observed |
-| 2026.9.0+ | ❌ Breaks code | Do not use |
-
----
-
 ## 🔧 Environment & Build Target
 
 This component has been verified and compiled using the production release of ESPHome:
